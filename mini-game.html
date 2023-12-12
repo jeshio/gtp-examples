@@ -69,18 +69,26 @@
         let highScores = [];
         let missedPresents = 0;
         const maxMissedPresents = 3;
+        const defaultSantaY = canvas.height - 80
+        const background = new Image();
+        background.src = 'background.webp';
+        const bgMusic = new Audio('./bg-music.mp3');
+        bgMusic.loop = true; // Enable looping
+        const hoSound = new Audio('ho.mp3');
+        const gameOverSound = new Audio('game-over.mp3');
         
         const santa = {
             x: canvas.width / 2,
-            y: canvas.height - 60,
-            width: 50,
-            height: 50,
+            y: defaultSantaY,
+            width: 80,
+            height: 80,
             speed: 40,
             sprite: new Image(),
             shaking: false,
             shakeDuration: 0,
+            direction: 'right'
         };
-        santa.sprite.src = './santa.jpeg';
+        santa.sprite.src = './santa.png';
 
         function createPresent() {
             const size = Math.random() * 20 + 30;
@@ -98,7 +106,11 @@
         }
 
         function drawSanta() {
-            ctx.drawImage(santa.sprite, santa.x, santa.y, santa.width, santa.height);
+            ctx.save(); // Save the current state
+            ctx.translate(santa.x + santa.width / 2, santa.y + santa.height / 2); // Move to the center of santa
+            ctx.scale(santa.direction === 'left' ? -1 : 1, 1); // Set scale to -1 on the x-axis if santa is facing left
+            ctx.drawImage(santa.sprite, -santa.width / 2, -santa.height / 2, santa.width, santa.height); // Draw santa centered
+            ctx.restore(); // Restore the state to prevent affecting other drawings
         }
 
         function startShake(duration = 500) {
@@ -162,7 +174,10 @@
                     present.y + present.height > santa.y) {
                     // Collision detected
                     startShake();
+                    hoSound.currentTime = 0
+                    hoSound.play();
                     let pointsGained;
+
                     if (present.isSpecial) {
                         pointsGained = Math.ceil(present.width / 10);
                         score += pointsGained;
@@ -182,8 +197,8 @@
             const originalY = y;
 
             function drawHint() {
-                ctx.font = '20px Arial';
-                ctx.fillStyle = 'black';
+                ctx.font = '24px Arial';
+                ctx.fillStyle = 'yellow';
                 ctx.fillText(text, x, y);
 
                 y -= 0.5; // Move the hint upwards
@@ -237,6 +252,13 @@
 
         function gameLoop() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Draw the background, adjusting the width to maintain aspect ratio
+            const bgRatio = background.width / background.height;
+            const scaledWidth = canvas.height * bgRatio;
+            const offsetX = (canvas.width - scaledWidth) / 2; // Center the background horizontally
+            ctx.drawImage(background, offsetX, 0, scaledWidth, canvas.height);
+
+
             if (leftPressed && santa.x > 0) {
                 santa.x -= santa.speed;
             }
@@ -247,10 +269,10 @@
 
             if (santa.shaking) {
                 if (santa.shakeDuration > 0) {
-                    santa.x += Math.random() * 5 - 2.5; // Randomly shake santa left and right
-                    // santa.y += Math.random() * 5 - 2.5; // Randomly shake santa up and down
+                    santa.y -= Math.random() * 2.5; // Randomly shake santa
                     santa.shakeDuration -= 30; // Assuming the game loop runs every 30ms
                 } else {
+                    santa.y = defaultSantaY
                     santa.shaking = false;
                 }
             }
@@ -328,6 +350,7 @@
         }
 
         function startGame() {
+            bgMusic.play();
             gameInterval = setInterval(gameLoop, 30);
             presentInterval = setInterval(createPresent, 1000);
             displayHighScores();
@@ -345,6 +368,10 @@
         }
 
         function gameOver() {
+            bgMusic.pause();
+            bgMusic.currentTime = 0; // Reset the music to the start
+            gameOverSound.play()
+
             clearInterval(gameInterval);
             clearInterval(presentInterval);
 
@@ -365,8 +392,10 @@
         document.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowLeft') {
                 leftPressed = true;
+                santa.direction = 'left';
             } else if (e.key === 'ArrowRight') {
                 rightPressed = true;
+                santa.direction = 'right';
             }
         });
 
@@ -376,6 +405,14 @@
             } else if (e.key === 'ArrowRight') {
                 rightPressed = false;
             }
+        });
+
+        document.addEventListener('click', function playMusic() {
+            if (bgMusic.paused) {
+                bgMusic.play().catch(e => console.error('Error playing music:', e));
+            }
+            // Remove the event listener after the music starts playing
+            document.removeEventListener('click', playMusic);
         });
     </script>
 </body>
