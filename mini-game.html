@@ -97,8 +97,8 @@
             presents.push({
                 x: Math.random() * (canvas.width - size),
                 y: 0,
-                width: size,
-                height: size,
+                width: isSpecial ? size * 3 : size,
+                height: isSpecial ? size * 3 : size,
                 speed: Math.random() * 3 + 2,
                 color: isSpecial ? 'rainbow' : `rgb(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255})`,
                 isSpecial: isSpecial
